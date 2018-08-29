@@ -1,19 +1,20 @@
 ((mongoService, mongodb) => {
 
-    var connectionString = process.env.MongoConnectionString || "mongodb://localhost:27017/paypaltesting";
+    const url = "mongodb://localhost:27017";
+    const dbName = "paypaltesting";
 
     var Connect = (cb) => {
-        mongodb.connect(connectionString, (err, db) => {
-            return cb(err, db, () => {
-                db.close();
+        mongodb.connect(url, { useNewUrlParser: true }, (err, client) => {
+            return cb(err, client.db(dbName), () => {
+                client.close();
             });
         });
     };
 
     mongoService.Create = (colName, createObj, cb) => {
         Connect((err, db, close) => {
-            db.collection(colName).insert(createObj, (err, result) => {
-                cb(err, results);
+            db.collection(colName).insertOne(createObj, (err, result) => {
+                cb(err, result);
                 return close();
             })
         });
@@ -30,7 +31,7 @@
 
     mongoService.Update = (colName, findObj, updateObj, cb) => {
         Connect((err, db, close) => {
-            db.collection(colName).update(findObj, { $set: updateObj }, (err, results) => {
+            db.collection(colName).updateOne(findObj, updateObj, (err, results) => {
                 cb(err, results);
                 return close();
             });
@@ -39,8 +40,8 @@
 
     mongoService.Delete = (colName, findObj, cb) => {
         Connect((err, db, close) => {
-            db.collection(colName).remove(findObj, (err, results) => {
-                cb(err, results);
+            db.collection(colName).remove(findObj, (err) => {
+                cb(err);
                 return close();
             });
         });
