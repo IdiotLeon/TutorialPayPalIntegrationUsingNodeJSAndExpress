@@ -2,6 +2,7 @@
     require('./config.js').SetConfig(paypal);
 
     paymentService.CreateItemObj = (name, price, quantity) => {
+
         var itemObj = {
             name: name,
             price: price,
@@ -9,6 +10,55 @@
             quantity: quantity
         };
         return itemObj;
+    };
+
+    // --------------------------------------------------------------------------------------
+    // Single Purchase
+    paymentService.CreateWithPayPal = (transactionsArray, returnUrl, cancelUrl, cb) => {
+
+        var dbObj = {
+            OrderID: "",
+            CreateTime: "",
+            Transactions: ""
+        };
+
+        mongoService.Create('paypal_orders', dbObj, (result) => {
+            var paymentObj = {
+                "intent": "sale",
+                "payer": {
+                    "payment_method": "paypal"
+                },
+                "redirect_urls": {
+                    "return_url": returnUrl + "/" + result.insertedId,
+                    "cancel_url": cancelUrl + "/" + result.insertedId
+                },
+                "transactions": transactionsArray
+            };
+
+            paypal.payment.create(paymentObj, (err, response) => {
+                if (err) {
+                    return cb(err);
+                } else {
+                    // console.log("response, paymentService.CreateWithPaypal: " + JSON.stringify(response));
+                    dbObj = {
+                        OrderID: response.id,
+                        CreateTime: response.create_time,
+                        Transactions: response.transactions
+                    };
+                    // console.log("dbObj.OrderID, paymentService.CreateWithPayPal: " + dbObj.OrderID);
+                    // console.log("dbObj.Transactions, paymentService.CreateWithPayPal: " + JSON.stringify(dbObj.Transactions));
+                    // console.log("result, paymentService.CreateWithPayPal: " + JSON.stringify(result));
+                    // console.log("dbObj.Transactions, paymentService.CreateWithPaypal: " + JSON.stringify(dbObj.Transactions));
+                    mongoService.UpdateOne('paypal_orders', { _id: result.insertedId }, dbObj, (err, result) => {
+                        for (var i = 0; i < response.links.length; i++) {
+                            if (response.links[i].rel == "approval_url") {
+                                return cb(null, response.links[i].href);
+                            }
+                        }
+                    });
+                }
+            });
+        });
     };
 
     paymentService.CreateTransactionObj = (tax, shipping, description, itemList) => {
@@ -36,74 +86,6 @@
         return transactionObj;
     };
 
-    paymentService.CreatePaymentCardJSON = (cardType, cardNumber, cardExpireMonth, cardExpireYear, cardCVV2, cardFirstName, cardLastName, billingAddressObj, transactionsArray) => {
-
-        var card = {
-            "intent": "sale",
-            "payer": {
-                "payment_method": "credit_card",
-                "funding_instruments": [{
-                    "credit_card": {
-                        "type": cardType,
-                        "number": cardNumber,
-                        "expire_month": cardExpireMonth,
-                        "expire_year": cardExpireYear,
-                        "cvv2": cardCVV2,
-                        "first_name": cardFirstName,
-                        "last_name": cardLastName,
-                        "billing_address": billingAddressObj
-                    }
-                }]
-            },
-            "transactions": transactionsArray
-        };
-
-        return card;
-    };
-
-
-    // --------------------------------------------------------------------------------------
-    // Single Purchase
-    paymentService.CreateWithPaypal = (transactionsArray, returnUrl, cancelUrl, cb) => {
-        var dbObj = {
-            OrderID: "",
-            CreateTime: "",
-            Transactions: ""
-        };
-        mongoService.Create('paypal_orders', dbObj, (err, results) => {
-            var paymentObj = {
-                "intent": "sale",
-                "payer": {
-                    "payment_method": "paypal"
-                },
-                "redirect_urls": {
-                    "return_url": returnUrl + "/" + results.insertedIds[0],
-                    "cancel_url": cancelUrl + "/" + results.insertedIds[0]
-                },
-                "transactions": transactionsArray
-            };
-
-            paypal.payment.create(paymentObj, (err, response) => {
-                if (err) {
-                    return cb(err);
-                } else {
-                    dbObj = {
-                        OrderID: response.id,
-                        CreateTime: response.create_time,
-                        Transactions: response.transactions
-                    };
-                    mongoService.Update('paypal_orders', { _id: results.insertedIds[0] }, dbObj, (err, results) => {
-                        for (var i = 0; i < response.links.length; i++) {
-                            if (response.links[i].rel == "approval_url") {
-                                return cb(null, response.links[i].href);
-                            }
-                        }
-                    });
-                }
-            });
-        });
-    };
-
     paymentService.GetPayment = (paymentID, cb) => {
         paypal.payment.get(paymentID, (err, payment) => {
             if (err) {
@@ -119,7 +101,9 @@
         var payerObj = { payer_id: payerID };
 
         mongoService.Read('paypal_orders', { _id: new ObjectID(orderID) }, (err, results) => {
+            console.log("orderID, paymentService.ExecutePayment: " + orderID);
             if (results) {
+                console.log("results, paymentService.ExecutePayment: " + JSON.stringify(results));
                 paypal.payment.execute(results[0].OrderID, payerObj, {}, (err, response) => {
                     if (err) {
                         return cb(err);
@@ -128,7 +112,7 @@
                         var updateObj = {
                             OrderDetails: response
                         };
-                        mongoService.Update('paypal_orders', { _id: new ObjectID(orderID) }, updateObj, (err, update_results) => {
+                        mongoService.UpdateOne('paypal_orders', { _id: new ObjectID(orderID) }, updateObj, (err, update_results) => {
                             return cb(null, orderID);
                         });
                     }

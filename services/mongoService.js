@@ -13,10 +13,17 @@
 
     mongoService.Create = (colName, createObj, cb) => {
         Connect((err, db, close) => {
-            db.collection(colName).insertOne(createObj, (err, result) => {
-                cb(err, result);
-                return close();
-            })
+            db.collection(colName)
+                .insertOne(createObj)
+                .then(result => {
+                    // console.log("result, mongoService.Create: " + JSON.stringify(result));
+                    // const { insertedId } = result;
+                    // console.log(`Inserted document with _id: ${insertedId}`);
+                    // console.log("InsertedId: " + result.insertedId);
+                    cb(result);
+                    return close();
+                })
+                .catch(err => console.error(err.message));
         });
     };
 
@@ -29,12 +36,17 @@
         });
     };
 
-    mongoService.Update = (colName, findObj, updateObj, cb) => {
+    mongoService.UpdateOne = (colName, findObj, updateObj, cb) => {
         Connect((err, db, close) => {
-            db.collection(colName).updateOne(findObj, updateObj, (err, results) => {
-                cb(err, results);
-                return close();
-            });
+            console.log("findObj, mongoService.Update: " + JSON.stringify(findObj));
+            // console.log("updateObj, mongoService.Update: " + JSON.stringify(updateObj));
+            db.collection(colName).updateOne(findObj, { $set: updateObj })
+                .then(results => {
+                    console.log("results, mongoService.Update: " + JSON.stringify(results));
+                    cb(results);
+                    return close();
+                })
+                .catch(err => { console.error(err.meesage) });
         });
     };
 
