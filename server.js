@@ -75,6 +75,51 @@
         });
     });
 
+    server.post('/buyrecurring', (req, res) => {
+        squatchPurchaseRepo.BuyRecurring(
+            "Squatch Plan",
+            "Recurring Squatch Plan",
+            0,
+            (err, plan) => {
+                if (err) {
+                    res.json(err);
+                } else {
+                    res.redirect(plan);
+                }
+            }
+        );
+    });
+
+    server.get('/recurring_success/:planID', (req, res) => {
+        var planID = req.params.planID;
+        var token = req.query.token;
+
+        squatchPurchaseRepo.ExecuteRecurring(token, (err, results) => {
+            if (err) {
+                res.json(err);
+            } else {
+                res.json(results);
+            }
+        });
+    });
+
+    server.get('/recurring_cancel/:planID', (req, res) => {
+        var planID = req.params.planID;
+        // todo: remove the record from mongoDB
+    });
+
+    server.get('/recurring_orderdetails/:agreementID', (req, res) => {
+        var agreementID = req.params.agreementID;
+
+        squatchPurchaseRepo.GetRecurringDetails(agreementID, (err, recurring_orderdetails) => {
+            if (err) {
+                res.json(err);
+            } else {
+                res.json(recurring_orderdetails);
+            }
+        });
+    });
+
     server.listen(8080, "localhost", (err) => {
         console.log(err || "Server Online");
     });

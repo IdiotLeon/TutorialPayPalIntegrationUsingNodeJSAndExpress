@@ -38,11 +38,11 @@
 
     mongoService.UpdateOne = (colName, findObj, updateObj, cb) => {
         Connect((err, db, close) => {
-            console.log("findObj, mongoService.Update: " + JSON.stringify(findObj));
+            console.log("findObj, mongoService.UpdateOne: " + JSON.stringify(findObj));
             // console.log("updateObj, mongoService.Update: " + JSON.stringify(updateObj));
             db.collection(colName).updateOne(findObj, { $set: updateObj })
                 .then(results => {
-                    console.log("results, mongoService.Update: " + JSON.stringify(results));
+                    console.log("results, mongoService.UpdateOne: " + JSON.stringify(results));
                     cb(results);
                     return close();
                 })

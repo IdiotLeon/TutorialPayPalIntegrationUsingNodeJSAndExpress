@@ -1,28 +1,28 @@
 ((subService, paypal, mongoService) => {
     subService.CreateBillingPlanAttributesObj = (planName, description, autobill, cancelUrl, returnUrl, planType, setUpFee, paymentDefinitionsArray) => {
-        var billingPlanAttribute = {
-            name: planName,
-            description: description,
-            type: planType,
-            merchant_preferences: {
-                auto_bill_amount: autobill,
-                cancel_url: cancelUrl,
-                return_url: returnUrl,
-                initial_fail_amount_action: "CONTINUE",
-                max_fail_attemps: "1",
-                setup_fee: {
-                    currency: "USD",
-                    value: setUpFee
+        var billingPlanAttributes = {
+            "name": planName,
+            "description": description,
+            "type": planType,
+            "payment_definitions": paymentDefinitionsArray,
+            "merchant_preferences": {
+                "auto_bill_amount": autobill,
+                "cancel_url": cancelUrl,
+                "return_url": returnUrl,
+                "initial_fail_amount_action": "CONTINUE",
+                "max_fail_attempts": "1",
+                "setup_fee": {
+                    "currency": "USD",
+                    "value": setUpFee
                 }
-            },
-
-            payment_definitions: paymentDefinitionsArray
+            }
         };
+
         return billingPlanAttributes;
     };
 
-    subService.CreateChargeModeObj = (amount, type) => {
-        var chargeModeObj = {
+    subService.CreateChargeModelObj = (amount, type) => {
+        var chargeModelObj = {
             amount: {
                 currency: "USD",
                 value: amount
@@ -38,17 +38,17 @@
             price += chargeModels[i].amount.value;
         }
 
-        var paymentDefinitionObj = {
-            amount: {
-                currency: "USD",
-                value: price
+        var paymentDefinitionsObj = {
+            "amount": {
+                "currency": "USD",
+                "value": price
             },
-            charge_models: chargeModels,
-            cycles: cycles,
-            frequency: frequency,
-            frequency_interval: interval,
-            name: name,
-            type: type
+            "charge_models": chargeModels,
+            "cycles": cycles,
+            "frequency": frequency,
+            "frequency_interval": interval,
+            "name": name,
+            "type": type
         };
 
         return paymentDefinitionsObj;
@@ -69,11 +69,10 @@
     };
 
     subService.CreateBillingAgreementAttributesObj = (name, description, startDate, planID, paymentMethod, shippingObj) => {
-
-        var billingAgreeAttributes = {
+        var billingAgreementAttributes = {
             name: name,
             description: description,
-            start_date: starteDate,
+            start_date: startDate,
             plan: {
                 id: planID
             },
@@ -83,7 +82,7 @@
             shipping_address: shippingObj
         };
 
-        return billingAgreeAttributes;
+        return billingAgreementAttributes;
     };
 
     subService.CreateAgreementUpdateAttributesObj = (name, description, shippingObj) => {
@@ -102,8 +101,14 @@
     };
 
     subService.CreatePlan = (billingPlanAttributes, cb) => {
-        paypal.billingPlan.create(CreateBillingPlanAttributesObj, (err, billingPlan) => {
-            return cb(err, billingPlan);
+        // onsole.log("billingPlanAttributes, subService.CreateAgreementUpdateAttributesObj: " + JSON.stringify(billingPlanAttributes));
+        paypal.billingPlan.create(billingPlanAttributes, (err, billingPlan) => {
+            if (err) {
+                console.error(err);
+                console.log(err.response.details);
+            } else {
+                return cb(err, billingPlan);
+            }
         });
     };
 
@@ -127,7 +132,7 @@
     };
 
     subService.CreateAgreement = (billingAgreementAttributes, cb) => {
-        paypal.billingAgreement.create(billingAgreeAttributes, (err, billingAgreement) => {
+        paypal.billingAgreement.create(billingAgreementAttributes, (err, billingAgreement) => {
             return cb(err, billingAgreement);
         });
     };
@@ -143,7 +148,7 @@
     };
 
     subService.GetAgreement = (agreementID, cb) => {
-        paypal.billingAgreement.get(agrementID, (err, billingAgreement) => {
+        paypal.billingAgreement.get(agreementID, (err, billingAgreement) => {
             return cb(err, billingAgreement);
         });
     };
