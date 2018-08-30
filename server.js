@@ -75,6 +75,38 @@
         });
     });
 
+    server.post('/buyrecurring', (req, res) => {
+        squatchPurchaseRepo.BuyRecurring(
+            "Squatch Plan",
+            "Recurring Squatch Plan",
+            0,
+            (err, plan) => {
+                if (err) {
+                    res.json(err);
+                } else {
+                    res.redirect(plan);
+                }
+            }
+        );
+    });
+
+    server.get('/recurring_success/:planID', (req, res) => {
+        var planID = req.params.planID;
+        var token = req.query.token;
+
+        squatchPurchaseRepo.ExecuteRecurring(planID, token, (err, results) => {
+            if (err) {
+                res.json(err);
+            } else {
+                res.json(results);
+            }
+        });
+    });
+
+    server.get('/recurring_cancel/:planID', (req, res) => {
+        var planID = req.params.planID;
+    })
+
     server.listen(8080, "localhost", (err) => {
         console.log(err || "Server Online");
     });
