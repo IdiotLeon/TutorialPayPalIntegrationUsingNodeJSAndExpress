@@ -7,8 +7,8 @@
             "client_id": "",
             "client_secret": ""
         }
+        paypal.configure(config);
     }
-    paypal.configure(config);
 })
     (
     module.exports
